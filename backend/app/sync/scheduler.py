@@ -5,6 +5,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from app.audit import write_audit
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.sync.backup import run_backup
@@ -46,6 +47,8 @@ def stop_scheduler():
 
 async def _nightly_sync():
     logger.info("Nightly sync triggered by scheduler")
+    async with AsyncSessionLocal() as db:
+        await write_audit(db, "system", "sync_nightly", "Scheduled nightly sync started")
     await run_full_sync(AsyncSessionLocal, settings.service_account_b64)
 
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
@@ -44,6 +44,7 @@ function exportDeviceCSV(tenantName, devices) {
   a.download = `${tenantName.replace(/\s+/g, "-").toLowerCase()}-devices-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+  api.logAudit("csv_export_tenant", `Exported ${devices.length} devices for ${tenantName}`).catch(() => {});
 }
 
 export default function TenantDetail() {
@@ -52,6 +53,8 @@ export default function TenantDetail() {
   const [sortKey, setSortKey] = useState("auto_update_expiration");
   const [sortDir, setSortDir] = useState("asc");
   const [search, setSearch] = useState("");
+
+  useEffect(() => { api.logAudit("tenant_view", `Viewed customer ID: ${id}`).catch(() => {}); }, [id]);
 
   const { data: tenant } = useQuery({ queryKey: ["tenant", id], queryFn: () => api.getTenant(id) });
   const { data: devices, isLoading } = useQuery({

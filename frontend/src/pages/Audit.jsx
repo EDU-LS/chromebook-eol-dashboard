@@ -3,14 +3,28 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
 
 const ACTION_CONFIG = {
-  login_success:   { label: "Sign in",           style: "bg-green-100 text-green-700",  icon: "✅" },
-  login_failed:    { label: "Failed sign in",     style: "bg-red-100 text-red-700",      icon: "❌" },
-  tenant_created:  { label: "Customer added",     style: "bg-brand-100 text-brand-700",  icon: "➕" },
-  tenant_updated:  { label: "Customer updated",   style: "bg-amber-100 text-amber-700",  icon: "✏️" },
-  tenant_deleted:  { label: "Customer removed",   style: "bg-red-100 text-red-700",      icon: "🗑️" },
-  sync_triggered:  { label: "Sync triggered",     style: "bg-purple-100 text-purple-700",icon: "🔄" },
-  sync_all:        { label: "Sync all",           style: "bg-purple-100 text-purple-700",icon: "🔄" },
-  tenant_csv_import: { label: "CSV import",       style: "bg-brand-100 text-brand-700",  icon: "📥" },
+  // Auth
+  login_success:            { label: "Sign in",              style: "bg-green-100 text-green-700",   icon: "✅" },
+  login_failed:             { label: "Failed sign in",        style: "bg-red-100 text-red-700",       icon: "❌" },
+  // Customers
+  tenant_created:           { label: "Customer added",        style: "bg-brand-100 text-brand-700",   icon: "➕" },
+  tenant_updated:           { label: "Customer updated",      style: "bg-amber-100 text-amber-700",   icon: "✏️" },
+  tenant_deleted:           { label: "Customer removed",      style: "bg-red-100 text-red-700",       icon: "🗑️" },
+  tenant_csv_import:        { label: "CSV import",            style: "bg-brand-100 text-brand-700",   icon: "📥" },
+  // Syncs
+  sync_triggered:           { label: "Sync triggered",        style: "bg-purple-100 text-purple-700", icon: "🔄" },
+  sync_all:                 { label: "Sync all",              style: "bg-purple-100 text-purple-700", icon: "🔄" },
+  sync_nightly:             { label: "Nightly sync",          style: "bg-purple-100 text-purple-700", icon: "🌙" },
+  // Page views
+  dashboard_view:           { label: "Viewed dashboard",      style: "bg-gray-100 text-gray-500",     icon: "👁️" },
+  tenant_view:              { label: "Viewed customer",        style: "bg-gray-100 text-gray-500",     icon: "👁️" },
+  // Exports
+  csv_export_all:           { label: "CSV export (all)",      style: "bg-green-100 text-green-700",   icon: "⬇️" },
+  csv_export_tenant:        { label: "CSV export (customer)", style: "bg-green-100 text-green-700",   icon: "⬇️" },
+  // Ideas
+  suggestion_created:       { label: "Idea posted",           style: "bg-amber-100 text-amber-700",   icon: "💡" },
+  suggestion_status_changed:{ label: "Idea status changed",   style: "bg-amber-100 text-amber-700",   icon: "🏷️" },
+  comment_added:            { label: "Reply posted",          style: "bg-amber-100 text-amber-700",   icon: "💬" },
 };
 
 function fmt(dateStr) {
@@ -21,7 +35,15 @@ function fmt(dateStr) {
 }
 
 const USERS   = ["All users", "LSpencer", "HCripps", "Eduthing"];
-const ACTIONS = ["All actions", "login_success", "login_failed", "tenant_created", "tenant_updated", "tenant_deleted", "sync_triggered", "sync_all", "tenant_csv_import"];
+const ACTIONS = [
+  "All actions",
+  "login_success", "login_failed",
+  "tenant_created", "tenant_updated", "tenant_deleted", "tenant_csv_import",
+  "sync_triggered", "sync_all", "sync_nightly",
+  "dashboard_view", "tenant_view",
+  "csv_export_all", "csv_export_tenant",
+  "suggestion_created", "suggestion_status_changed", "comment_added",
+];
 
 export default function Audit() {
   const [userFilter,   setUserFilter]   = useState("All users");

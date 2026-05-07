@@ -48,6 +48,7 @@ export const api = {
     return request(`/tenants/${id}/devices${qs ? `?${qs}` : ""}`);
   },
   getAuditLogs: () => request("/audit"),
+  logAudit: (action, detail) => request("/audit/log", { method: "POST", body: JSON.stringify({ action, detail }) }),
   importTenantsCsv: (file) => {
     const token = getToken();
     const form = new FormData();

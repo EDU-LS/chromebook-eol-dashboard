@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -52,6 +52,7 @@ function exportCSV(tenants) {
   a.download = `chromebook-eol-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+  api.logAudit("csv_export_all", `Exported ${tenants.length} customers`).catch(() => {});
 }
 
 export default function Dashboard() {
@@ -59,6 +60,8 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
+
+  useEffect(() => { api.logAudit("dashboard_view").catch(() => {}); }, []);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard"],
