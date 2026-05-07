@@ -47,9 +47,15 @@ async def seed_users():
     async with AsyncSessionLocal() as db:
         for username, plain_password in SEED_USERS:
             result = await db.execute(select(User).where(User.username == username))
-            if result.scalar_one_or_none() is None:
+            existing = result.scalar_one_or_none()
+            if existing is None:
                 db.add(User(username=username, hashed_password=hash_password(plain_password)))
                 logger.info("Seeded user: %s", username)
+            elif username == settings.auth_username:
+                # Always sync the admin password from the env var so changing
+                # AUTH_PASSWORD in Portainer takes effect on next redeploy.
+                existing.hashed_password = hash_password(plain_password)
+                logger.info("Refreshed password for admin user: %s", username)
         await db.commit()
 
 
