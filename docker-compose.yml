@@ -25,6 +25,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
       SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
       SECRET_KEY: ${SECRET_KEY}
+      AUTH_USERNAME: ${AUTH_USERNAME:-Eduthing}
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
     networks:
       - internal
       - proxy
