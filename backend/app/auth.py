@@ -1,18 +1,23 @@
-"""JWT authentication for the dashboard."""
+"""JWT authentication — DB-backed multi-user."""
 
-import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.database import get_db
+from app.models import User
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 8
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,11 +27,12 @@ class Token(BaseModel):
     token_type: str
 
 
-def _verify_credentials(username: str, password: str) -> bool:
-    return (
-        secrets.compare_digest(username.lower(), settings.auth_username.lower())
-        and secrets.compare_digest(password, settings.auth_password)
-    )
+def hash_password(plain: str) -> str:
+    return pwd_context.hash(plain)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
 
 
 def create_access_token(username: str) -> str:
@@ -54,13 +60,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    if not _verify_credentials(form_data.username, form_data.password):
+async def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(User).where(User.username == form_data.username, User.is_active == True)  # noqa: E712
+    )
+    user = result.scalar_one_or_none()
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
     return Token(
-        access_token=create_access_token(form_data.username),
+        access_token=create_access_token(user.username),
         token_type="bearer",
     )

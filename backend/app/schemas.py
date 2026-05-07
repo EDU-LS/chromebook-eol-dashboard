@@ -100,6 +100,21 @@ class SuggestionCreate(BaseModel):
     submitted_by: Optional[str] = None
 
 
+class CommentOut(BaseModel):
+    id: UUID
+    suggestion_id: UUID
+    content: str
+    author: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CommentCreate(BaseModel):
+    content: str
+    author: str
+
+
 class SuggestionOut(BaseModel):
     id: UUID
     title: str
@@ -108,6 +123,7 @@ class SuggestionOut(BaseModel):
     submitted_by: Optional[str]
     status: str
     created_at: datetime
+    comments: list[CommentOut] = []
 
     model_config = {"from_attributes": True}
 

@@ -73,6 +73,19 @@ class Device(Base):
     tenant = relationship("Tenant", back_populates="devices")
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class Suggestion(Base):
     __tablename__ = "suggestions"
 
@@ -81,11 +94,32 @@ class Suggestion(Base):
     category = Column(String(100), nullable=False, default="Other")
     description = Column(Text)
     submitted_by = Column(String(100))
-    status = Column(String(50), nullable=False, default="new")  # new, reviewing, planned, done, declined
+    status = Column(String(50), nullable=False, default="pending")  # pending, to_be_discussed, complete
     created_at = Column(
         DateTime(timezone=True), nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+
+    comments = relationship("SuggestionComment", back_populates="suggestion", cascade="all, delete-orphan", order_by="SuggestionComment.created_at")
+
+
+class SuggestionComment(Base):
+    __tablename__ = "suggestion_comments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    suggestion_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("suggestions.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    content = Column(Text, nullable=False)
+    author = Column(String(100), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    suggestion = relationship("Suggestion", back_populates="comments")
 
 
 class SyncLog(Base):

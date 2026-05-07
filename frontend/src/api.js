@@ -49,4 +49,6 @@ export const api = {
   },
   getSuggestions: () => request("/suggestions"),
   createSuggestion: (body) => request("/suggestions", { method: "POST", body: JSON.stringify(body) }),
+  updateSuggestionStatus: (id, status) => request(`/suggestions/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  addComment: (id, body) => request(`/suggestions/${id}/comments`, { method: "POST", body: JSON.stringify(body) }),
 };

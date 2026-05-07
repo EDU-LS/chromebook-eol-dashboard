@@ -2,14 +2,18 @@ import logging
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
 
 from app.api import dashboard, devices, suggestions, tenants
-from app.auth import get_current_user, router as auth_router
-from app.database import engine
-from app.models import Base
+from app.auth import get_current_user, hash_password, router as auth_router
+from app.config import settings
+from app.database import AsyncSessionLocal, engine
+from app.models import Base, User
 from app.sync.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Eduthing Chromebook EOL Dashboard", version="1.0.0")
 
@@ -30,11 +34,30 @@ app.include_router(tenants.router, prefix="/api", **protected)
 app.include_router(devices.router, prefix="/api", **protected)
 app.include_router(suggestions.router, prefix="/api", **protected)
 
+# Seed users: username → plain password
+# The primary admin is read from env vars; extra users are listed here.
+SEED_USERS = [
+    (settings.auth_username, settings.auth_password),
+    ("LSpencer",             "Px8#Qv2mKb"),
+    ("HCripps",              "Rw5!Tn9cYj"),
+]
+
+
+async def seed_users():
+    async with AsyncSessionLocal() as db:
+        for username, plain_password in SEED_USERS:
+            result = await db.execute(select(User).where(User.username == username))
+            if result.scalar_one_or_none() is None:
+                db.add(User(username=username, hashed_password=hash_password(plain_password)))
+                logger.info("Seeded user: %s", username)
+        await db.commit()
+
 
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await seed_users()
     start_scheduler()
 
 
