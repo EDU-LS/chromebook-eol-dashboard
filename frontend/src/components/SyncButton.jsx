@@ -29,7 +29,7 @@ export default function SyncButton({ tenantId, label = "Sync now" }) {
       <button
         onClick={handleSync}
         disabled={loading}
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
       >
         {loading ? (
           <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
@@ -9,9 +10,48 @@ function fmt(n) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n);
 }
 
+function SortIcon({ dir }) {
+  if (!dir) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1">{dir === "asc" ? "↑" : "↓"}</span>;
+}
+
+const DEVICE_COLS = [
+  { key: "serial_number",          label: "Serial" },
+  { key: "model",                  label: "Model" },
+  { key: "auto_update_expiration", label: "EOL date" },
+  { key: "annotated_user",         label: "User" },
+  { key: "annotated_location",     label: "Location" },
+  { key: "os_version",             label: "OS version" },
+  { key: "org_unit_path",          label: "Org unit" },
+];
+
+function exportDeviceCSV(tenantName, devices) {
+  const headers = ["Serial", "Model", "EOL date", "User", "Location", "OS version", "Org unit"];
+  const rows = devices.map((d) => [
+    d.serial_number ?? "",
+    d.model ?? "",
+    d.auto_update_expiration ? new Date(d.auto_update_expiration).toLocaleDateString("en-GB") : "",
+    d.annotated_user ?? "",
+    d.annotated_location ?? "",
+    d.os_version ?? "",
+    d.org_unit_path ?? "",
+  ]);
+  const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${tenantName.replace(/\s+/g, "-").toLowerCase()}-devices-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function TenantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [sortKey, setSortKey] = useState("auto_update_expiration");
+  const [sortDir, setSortDir] = useState("asc");
+  const [search, setSearch] = useState("");
 
   const { data: tenant } = useQuery({ queryKey: ["tenant", id], queryFn: () => api.getTenant(id) });
   const { data: devices, isLoading } = useQuery({
@@ -22,6 +62,29 @@ export default function TenantDetail() {
     queryKey: ["sync-logs", id],
     queryFn: () => api.getSyncLogs(id),
   });
+
+  const sortedFiltered = useMemo(() => {
+    if (!devices) return [];
+    const q = search.toLowerCase();
+    const filtered = devices.filter(
+      (d) =>
+        (d.serial_number ?? "").toLowerCase().includes(q) ||
+        (d.model ?? "").toLowerCase().includes(q) ||
+        (d.annotated_user ?? "").toLowerCase().includes(q) ||
+        (d.annotated_location ?? "").toLowerCase().includes(q),
+    );
+    return [...filtered].sort((a, b) => {
+      const av = a[sortKey] ?? "";
+      const bv = b[sortKey] ?? "";
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [devices, search, sortKey, sortDir]);
+
+  function handleSort(key) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
 
   if (!tenant) return <div className="p-8 text-gray-500">Loading…</div>;
 
@@ -47,7 +110,7 @@ export default function TenantDetail() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Active devices" value={devices?.length ?? "…"} accent="indigo" />
+        <StatCard label="Active devices" value={devices?.length ?? "…"} accent="brand" />
         <StatCard label="Expired" value={expired.length} accent="red" />
         <StatCard label="Expiring ≤12mo" value={expiring12.length} accent="amber" />
         <StatCard label="Est. 12mo pipeline" value={fmt(expiring12.length * Number(tenant.device_replacement_cost))} accent="green" />
@@ -55,9 +118,27 @@ export default function TenantDetail() {
 
       {/* Device table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Active devices ({devices?.length ?? "…"})</h2>
+        <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center gap-3">
+          <h2 className="text-sm font-semibold text-gray-700 mr-auto">
+            Active devices ({devices?.length ?? "…"})
+          </h2>
+          <input
+            type="search"
+            placeholder="Search serial, model, user…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-56"
+          />
+          {devices && (
+            <button
+              onClick={() => exportDeviceCSV(tenant.name, sortedFiltered)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
+            >
+              ⬇ Export CSV
+            </button>
+          )}
         </div>
+
         {isLoading ? (
           <div className="p-8 text-center text-gray-400">Loading devices…</div>
         ) : (
@@ -65,16 +146,21 @@ export default function TenantDetail() {
             <table className="min-w-full divide-y divide-gray-100 text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Serial", "Model", "EOL date", "User", "Location", "OS version", "Org unit"].map((h) => (
-                    <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {h}
+                  {DEVICE_COLS.map((col) => (
+                    <th
+                      key={col.key}
+                      onClick={() => handleSort(col.key)}
+                      className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-brand-600 select-none whitespace-nowrap"
+                    >
+                      {col.label}
+                      <SortIcon dir={sortKey === col.key ? sortDir : null} />
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {devices?.map((d) => (
-                  <tr key={d.id} className="hover:bg-gray-50">
+                {sortedFiltered.map((d) => (
+                  <tr key={d.id} className="hover:bg-brand-50">
                     <td className="px-4 py-2 font-mono text-xs text-gray-700">{d.serial_number ?? "—"}</td>
                     <td className="px-4 py-2 text-gray-800">{d.model ?? "—"}</td>
                     <td className="px-4 py-2">
@@ -86,6 +172,13 @@ export default function TenantDetail() {
                     <td className="px-4 py-2 text-gray-400 text-xs truncate max-w-[160px]">{d.org_unit_path ?? "—"}</td>
                   </tr>
                 ))}
+                {sortedFiltered.length === 0 && !isLoading && (
+                  <tr>
+                    <td colSpan={DEVICE_COLS.length} className="px-4 py-8 text-center text-gray-400 text-sm">
+                      {search ? `No devices match "${search}"` : "No devices found"}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

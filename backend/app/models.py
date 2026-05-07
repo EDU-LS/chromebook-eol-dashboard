@@ -73,6 +73,21 @@ class Device(Base):
     tenant = relationship("Tenant", back_populates="devices")
 
 
+class Suggestion(Base):
+    __tablename__ = "suggestions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=False, default="Other")
+    description = Column(Text)
+    submitted_by = Column(String(100))
+    status = Column(String(50), nullable=False, default="new")  # new, reviewing, planned, done, declined
+    created_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class SyncLog(Base):
     __tablename__ = "sync_logs"
 

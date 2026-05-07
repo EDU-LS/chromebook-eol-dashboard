@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import dashboard, devices, tenants
+from app.api import dashboard, devices, suggestions, tenants
 from app.auth import get_current_user, router as auth_router
 from app.database import engine
 from app.models import Base
@@ -28,6 +28,7 @@ protected = {"dependencies": [Depends(get_current_user)]}
 app.include_router(dashboard.router, prefix="/api", **protected)
 app.include_router(tenants.router, prefix="/api", **protected)
 app.include_router(devices.router, prefix="/api", **protected)
+app.include_router(suggestions.router, prefix="/api", **protected)
 
 
 @app.on_event("startup")

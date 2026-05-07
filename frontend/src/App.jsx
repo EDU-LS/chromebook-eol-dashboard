@@ -4,20 +4,21 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import TenantDetail from "./pages/TenantDetail";
 import TenantsAdmin from "./pages/TenantsAdmin";
+import Suggestions from "./pages/Suggestions";
 
 function ProtectedRoute({ children }) {
   return isAuthenticated() ? children : <Navigate to="/login" replace />;
 }
 
 function Sidebar() {
-  const link = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-indigo-200 hover:bg-indigo-700 hover:text-white transition-colors";
-  const active = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-indigo-700 text-white";
+  const link = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-brand-200 hover:bg-brand-700 hover:text-white transition-colors";
+  const active = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-brand-600 text-white";
 
   return (
     <aside className="w-56 shrink-0 bg-brand-900 flex flex-col min-h-screen">
-      <div className="px-4 py-5 border-b border-indigo-800">
+      <div className="px-4 py-5 border-b border-brand-800">
         <span className="text-white font-bold text-lg tracking-tight">Eduthing</span>
-        <p className="text-indigo-400 text-xs mt-0.5">Chromebook EOL</p>
+        <p className="text-brand-300 text-xs mt-0.5">Chromebook EOL</p>
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">
         <NavLink to="/" end className={({ isActive }) => (isActive ? active : link)}>
@@ -26,15 +27,21 @@ function Sidebar() {
         <NavLink to="/admin" className={({ isActive }) => (isActive ? active : link)}>
           <span>⚙️</span> Customers
         </NavLink>
+        <NavLink to="/suggestions" className={({ isActive }) => (isActive ? active : link)}>
+          <span>💡</span> Ideas
+        </NavLink>
       </nav>
-      <div className="px-4 py-3 border-t border-indigo-800 flex items-center justify-between">
-        <p className="text-indigo-500 text-xs">v1.0 · {new Date().getFullYear()}</p>
-        <button
-          onClick={() => { clearToken(); window.location.href = "/login"; }}
-          className="text-indigo-400 hover:text-white text-xs transition-colors"
-        >
-          Sign out
-        </button>
+      <div className="px-4 py-3 border-t border-brand-800">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-brand-400 text-xs">v1.0 · {new Date().getFullYear()}</p>
+          <button
+            onClick={() => { clearToken(); window.location.href = "/login"; }}
+            className="text-brand-400 hover:text-white text-xs transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
+        <p className="text-brand-600 text-xs">Made by LS @ EDU</p>
       </div>
     </aside>
   );
@@ -49,6 +56,7 @@ function AppLayout() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/tenant/:id" element={<TenantDetail />} />
           <Route path="/admin" element={<TenantsAdmin />} />
+          <Route path="/suggestions" element={<Suggestions />} />
         </Routes>
       </main>
     </div>

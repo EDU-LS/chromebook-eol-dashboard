@@ -31,7 +31,7 @@ export default function Login() {
         {/* Logo / branding */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white tracking-tight">Eduthing</h1>
-          <p className="text-indigo-300 mt-1 text-sm">Chromebook EOL Dashboard</p>
+          <p className="text-brand-300 mt-1 text-sm">Chromebook EOL Dashboard</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-8">
@@ -52,7 +52,7 @@ export default function Login() {
                 autoFocus
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="Eduthing"
               />
             </div>
@@ -63,20 +63,20 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors mt-2"
+              className="w-full rounded-lg bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors mt-2"
             >
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-indigo-400 text-xs mt-6">
+        <p className="text-center text-brand-400 text-xs mt-6">
           © {new Date().getFullYear()} Eduthing Limited
         </p>
       </div>

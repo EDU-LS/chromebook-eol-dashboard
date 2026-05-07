@@ -53,7 +53,7 @@ export default function TenantsAdmin() {
     });
   }
 
-  const field = "block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  const field = "block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500";
   const label = "block text-xs font-medium text-gray-600 mb-1";
 
   return (
@@ -99,7 +99,7 @@ export default function TenantsAdmin() {
           </div>
           <div className="col-span-2 flex gap-3">
             <button type="submit" disabled={save.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
               {save.isPending ? "Saving…" : editId ? "Update" : "Add customer"}
             </button>
             {editId && (
@@ -139,7 +139,7 @@ export default function TenantsAdmin() {
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <button onClick={() => startEdit(t)}
-                      className="text-xs text-indigo-600 hover:underline">Edit</button>
+                      className="text-xs text-brand-600 hover:underline">Edit</button>
                     <button onClick={() => {
                       if (confirm(`Remove ${t.name}?`)) remove.mutate(t.id);
                     }} className="text-xs text-red-500 hover:underline">Remove</button>

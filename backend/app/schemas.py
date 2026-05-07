@@ -91,6 +91,27 @@ class DashboardSummary(BaseModel):
     tenants: list[TenantSummary]
 
 
+# ── Suggestions ───────────────────────────────────────────────────────────────
+
+class SuggestionCreate(BaseModel):
+    title: str
+    category: str = "Other"
+    description: Optional[str] = None
+    submitted_by: Optional[str] = None
+
+
+class SuggestionOut(BaseModel):
+    id: UUID
+    title: str
+    category: str
+    description: Optional[str]
+    submitted_by: Optional[str]
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Sync ──────────────────────────────────────────────────────────────────────
 
 class SyncLogOut(BaseModel):
