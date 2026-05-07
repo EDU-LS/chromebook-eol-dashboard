@@ -104,7 +104,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         <StatCard label="Active devices" value={data.total_active_devices.toLocaleString()} accent="brand" />
         <StatCard label="Expired" value={data.total_expired.toLocaleString()} accent="red" />
         <StatCard label="Expiring ≤12mo" value={data.total_expiring_12m.toLocaleString()} accent="amber" />

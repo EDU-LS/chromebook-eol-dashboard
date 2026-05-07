@@ -7,7 +7,7 @@ export default function StatCard({ label, value, sub, accent = "brand" }) {
     purple: "bg-purple-50 text-purple-700 border-purple-200",
   };
   return (
-    <div className={`rounded-xl border p-4 ${colors[accent] ?? colors.brand}`}>
+    <div className={`rounded-xl border p-4 text-center w-40 shrink-0 grow ${colors[accent] ?? colors.brand}`}>
       <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
       <p className="text-3xl font-bold mt-1">{value}</p>
       {sub && <p className="text-xs mt-1 opacity-60">{sub}</p>}
