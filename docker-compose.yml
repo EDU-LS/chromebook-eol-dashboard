@@ -1,10 +1,9 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    image: ghcr.io/edu-ls/chromebook-eol-dashboard-caddy:latest
     ports:
       - "80:80"
     volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:

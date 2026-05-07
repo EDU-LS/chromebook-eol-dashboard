@@ -3,13 +3,14 @@ name: Build & Push Images
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   API_IMAGE: ghcr.io/edu-ls/chromebook-eol-dashboard-api
   WORKER_IMAGE: ghcr.io/edu-ls/chromebook-eol-dashboard-worker
   FRONTEND_IMAGE: ghcr.io/edu-ls/chromebook-eol-dashboard-frontend
+  CADDY_IMAGE: ghcr.io/edu-ls/chromebook-eol-dashboard-caddy
 
 jobs:
   build:
@@ -50,3 +51,10 @@ jobs:
           context: ./frontend
           push: true
           tags: ${{ env.FRONTEND_IMAGE }}:latest
+
+      - name: Build and push Caddy
+        uses: docker/build-push-action@v5
+        with:
+          context: ./caddy
+          push: true
+          tags: ${{ env.CADDY_IMAGE }}:latest
