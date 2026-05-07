@@ -1,0 +1,85 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+    restart: unless-stopped
+    depends_on:
+      - api
+      - frontend
+
+  frontend:
+    build:
+      context: ./frontend
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
+      SERVICE_ACCOUNT_FILE: /secrets/service_account.json
+      SECRET_KEY: ${SECRET_KEY}
+    volumes:
+      - ./secrets:/secrets:ro
+    networks:
+      - internal
+      - proxy
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
+      SERVICE_ACCOUNT_FILE: /secrets/service_account.json
+      SYNC_HOUR: ${SYNC_HOUR:-2}
+      SYNC_MINUTE: ${SYNC_MINUTE:-0}
+    volumes:
+      - ./secrets:/secrets:ro
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chromebook_eol
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d chromebook_eol"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    driver: bridge
+  proxy:
+    driver: bridge

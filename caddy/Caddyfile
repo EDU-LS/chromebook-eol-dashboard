@@ -1,0 +1,12 @@
+# Internal HTTP-only — no TLS needed on the LAN
+:80 {
+    # API requests
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    # Everything else goes to the React frontend
+    handle {
+        reverse_proxy frontend:80
+    }
+}
