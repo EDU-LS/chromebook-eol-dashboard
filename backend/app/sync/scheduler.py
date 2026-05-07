@@ -1,4 +1,4 @@
-"""APScheduler wrapper — runs the nightly sync at a configurable UTC time."""
+"""APScheduler wrapper — nightly sync at configurable UTC time."""
 
 import logging
 
@@ -22,10 +22,7 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
     _scheduler.start()
-    logger.info(
-        "Scheduler started — nightly sync at %02d:%02d UTC",
-        settings.sync_hour, settings.sync_minute,
-    )
+    logger.info("Scheduler started — nightly sync at %02d:%02d UTC", settings.sync_hour, settings.sync_minute)
 
 
 def stop_scheduler():
@@ -34,4 +31,4 @@ def stop_scheduler():
 
 async def _nightly_sync():
     logger.info("Nightly sync triggered by scheduler")
-    await run_full_sync(AsyncSessionLocal, settings.service_account_file)
+    await run_full_sync(AsyncSessionLocal, settings.service_account_b64)

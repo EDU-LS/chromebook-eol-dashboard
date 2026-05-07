@@ -1,10 +1,11 @@
 """Google Admin SDK client with domain-wide delegation support."""
 
+import base64
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from google.auth.exceptions import GoogleAuthError
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -17,16 +18,16 @@ SCOPES = [
 
 
 def get_delegated_credentials(
-    service_account_file: str,
+    service_account_b64: str,
     subject: str,
 ) -> service_account.Credentials:
     """
-    Load the Eduthing service account and delegate to `subject` (a Super Admin
-    in the target Workspace). The customer's Google Admin must have granted
-    DWD access to this service account's client ID.
+    Load the Eduthing service account from a base64-encoded JSON string
+    and delegate to `subject` (a Super Admin in the target Workspace).
     """
-    creds = service_account.Credentials.from_service_account_file(
-        service_account_file,
+    json_data = json.loads(base64.b64decode(service_account_b64))
+    creds = service_account.Credentials.from_service_account_info(
+        json_data,
         scopes=SCOPES,
     )
     return creds.with_subject(subject)
@@ -39,13 +40,11 @@ def list_chrome_devices(
     """
     Fetch all Chrome OS devices for a customer via the Admin SDK Directory API.
     Handles pagination automatically.
-
-    Raises GoogleAuthError / HttpError on failure — caller should catch and log.
     """
     service = build(
         "admin", "directory_v1",
         credentials=credentials,
-        cache_discovery=False,  # avoid file-system cache issues in containers
+        cache_discovery=False,
     )
 
     devices: list[dict] = []
@@ -76,23 +75,17 @@ def list_chrome_devices(
 def parse_aue_date(raw: Optional[str]) -> Optional[datetime]:
     """
     Parse the autoUpdateExpiration value from the API.
-
-    Google returns this as either:
-      - epoch milliseconds as a string (older API behaviour)
-      - ISO 8601 timestamp string (newer behaviour)
-      - "0" or empty when unknown
+    Google returns this as epoch milliseconds string or ISO 8601.
     """
     if not raw or raw in ("0", ""):
         return None
 
-    # Epoch ms — distinguishable by being a long digit string
     if raw.isdigit() and len(raw) > 10:
         try:
             return datetime.fromtimestamp(int(raw) / 1000, tz=timezone.utc)
         except (ValueError, OSError):
             return None
 
-    # ISO 8601 variants
     for fmt in (
         "%Y-%m-%dT%H:%M:%S.%fZ",
         "%Y-%m-%dT%H:%M:%SZ",
@@ -100,8 +93,7 @@ def parse_aue_date(raw: Optional[str]) -> Optional[datetime]:
         "%Y-%m-%d",
     ):
         try:
-            dt = datetime.strptime(raw, fmt)
-            return dt.replace(tzinfo=timezone.utc)
+            return datetime.strptime(raw, fmt).replace(tzinfo=timezone.utc)
         except ValueError:
             continue
 

@@ -26,10 +26,8 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
-      SERVICE_ACCOUNT_FILE: /secrets/service_account.json
+      SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
       SECRET_KEY: ${SECRET_KEY}
-    volumes:
-      - ./secrets:/secrets:ro
     networks:
       - internal
       - proxy
@@ -44,11 +42,9 @@ services:
       dockerfile: worker/Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
-      SERVICE_ACCOUNT_FILE: /secrets/service_account.json
+      SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
       SYNC_HOUR: ${SYNC_HOUR:-2}
       SYNC_MINUTE: ${SYNC_MINUTE:-0}
-    volumes:
-      - ./secrets:/secrets:ro
     networks:
       - internal
     depends_on:

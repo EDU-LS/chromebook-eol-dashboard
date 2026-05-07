@@ -1,9 +1,5 @@
 """
-Core sync engine.
-
-Iterates over all active tenants, authenticates via domain-wide delegation,
-fetches Chrome OS device inventory, and upserts into Postgres using
-INSERT ... ON CONFLICT DO UPDATE for idempotency.
+Core sync engine — iterates tenants, calls Google API, upserts to Postgres.
 """
 
 import asyncio
@@ -26,25 +22,16 @@ from app.sync.google_client import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Thread pool for running synchronous Google API calls without blocking the event loop
 _executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="google-api")
-
-# Limit concurrent tenant syncs to avoid hammering the Google API
 _CONCURRENCY = 5
 
 
 async def run_full_sync(
     session_factory: async_sessionmaker,
-    service_account_file: str,
+    service_account_b64: str,
     tenant_id: Optional[uuid.UUID] = None,
 ) -> dict:
-    """
-    Entry point for both the nightly scheduler and on-demand API triggers.
-
-    If `tenant_id` is given, only that tenant is synced. Otherwise all active
-    tenants are processed with bounded concurrency.
-    """
+    """Entry point for nightly scheduler and on-demand API triggers."""
     async with session_factory() as session:
         if tenant_id:
             row = await session.get(Tenant, tenant_id)
@@ -60,38 +47,29 @@ async def run_full_sync(
         return {"synced": 0, "failed": 0}
 
     logger.info("Starting sync for %d tenant(s)", len(tenants))
-
     semaphore = asyncio.Semaphore(_CONCURRENCY)
     results = {"synced": 0, "failed": 0}
 
     async def _bounded_sync(tenant: Tenant):
         async with semaphore:
             async with session_factory() as session:
-                ok = await sync_tenant(tenant.id, session, service_account_file)
+                ok = await sync_tenant(tenant.id, session, service_account_b64)
                 if ok:
                     results["synced"] += 1
                 else:
                     results["failed"] += 1
 
     await asyncio.gather(*[_bounded_sync(t) for t in tenants], return_exceptions=True)
-
-    logger.info(
-        "Sync complete — %d succeeded, %d failed",
-        results["synced"], results["failed"],
-    )
+    logger.info("Sync complete — %d succeeded, %d failed", results["synced"], results["failed"])
     return results
 
 
 async def sync_tenant(
     tenant_id: uuid.UUID,
     session: AsyncSession,
-    service_account_file: str,
+    service_account_b64: str,
 ) -> bool:
-    """
-    Sync a single tenant. Returns True on success, False on failure.
-
-    Uses a dedicated AsyncSession so failures don't affect other tenants.
-    """
+    """Sync a single tenant. Returns True on success."""
     tenant: Optional[Tenant] = await session.get(Tenant, tenant_id)
     if not tenant:
         logger.error("Tenant %s not found", tenant_id)
@@ -106,11 +84,10 @@ async def sync_tenant(
 
     try:
         creds = get_delegated_credentials(
-            service_account_file=service_account_file,
+            service_account_b64=service_account_b64,
             subject=tenant.admin_email,
         )
 
-        # Run blocking Google API call in thread pool
         loop = asyncio.get_event_loop()
         raw_devices: list[dict] = await loop.run_in_executor(
             _executor,
@@ -123,44 +100,36 @@ async def sync_tenant(
 
         now = datetime.now(timezone.utc)
         await session.execute(
-            update(Tenant)
-            .where(Tenant.id == tenant_id)
+            update(Tenant).where(Tenant.id == tenant_id)
             .values(last_synced_at=now, last_sync_status="success")
         )
         await session.execute(
-            update(SyncLog)
-            .where(SyncLog.id == log_id)
+            update(SyncLog).where(SyncLog.id == log_id)
             .values(status="success", devices_synced=count, completed_at=now)
         )
         await session.commit()
-
         logger.info("Synced %d devices for %s", count, tenant.domain)
         return True
 
     except Exception as exc:
         logger.exception("Sync failed for %s: %s", tenant.domain, exc)
         await session.rollback()
-
         try:
             async with session.bind.connect() as conn:
                 await conn.execute(
                     text("""
-                        UPDATE sync_logs
-                        SET status = 'failed',
-                            error_message = :msg,
-                            completed_at = NOW()
-                        WHERE id = :id
+                        UPDATE sync_logs SET status='failed',
+                        error_message=:msg, completed_at=NOW() WHERE id=:id
                     """),
                     {"id": str(log_id), "msg": str(exc)[:2000]},
                 )
                 await conn.execute(
-                    text("UPDATE tenants SET last_sync_status = 'failed' WHERE id = :id"),
+                    text("UPDATE tenants SET last_sync_status='failed' WHERE id=:id"),
                     {"id": str(tenant_id)},
                 )
                 await conn.commit()
         except Exception as inner:
             logger.error("Could not write failure log: %s", inner)
-
         return False
 
 
@@ -169,11 +138,7 @@ async def _upsert_devices(
     tenant_id: uuid.UUID,
     raw_devices: list[dict],
 ) -> int:
-    """
-    Bulk-upsert devices using Postgres INSERT ON CONFLICT DO UPDATE.
-    Only ACTIVE/DISABLED devices are kept; deprovisioned ones are skipped.
-    Returns the number of rows upserted.
-    """
+    """Bulk-upsert devices. Returns count upserted."""
     if not raw_devices:
         return 0
 
@@ -182,31 +147,27 @@ async def _upsert_devices(
         status = d.get("status", "")
         if status == "DEPROVISIONED":
             continue
-
-        rows.append(
-            {
-                "id": uuid.uuid4(),
-                "tenant_id": tenant_id,
-                "device_id": d["deviceId"],
-                "serial_number": d.get("serialNumber"),
-                "model": d.get("model"),
-                "org_unit_path": d.get("orgUnitPath"),
-                "status": status,
-                "auto_update_expiration": parse_aue_date(d.get("autoUpdateExpiration")),
-                "last_enrolled_time": parse_google_datetime(d.get("lastEnrollmentTime")),
-                "last_sync": parse_google_datetime(d.get("lastSync")),
-                "os_version": d.get("osVersion"),
-                "annotated_user": d.get("annotatedUser"),
-                "annotated_location": d.get("annotatedLocation"),
-                "annotated_asset_id": d.get("annotatedAssetId"),
-                "updated_at": datetime.now(timezone.utc),
-            }
-        )
+        rows.append({
+            "id": uuid.uuid4(),
+            "tenant_id": tenant_id,
+            "device_id": d["deviceId"],
+            "serial_number": d.get("serialNumber"),
+            "model": d.get("model"),
+            "org_unit_path": d.get("orgUnitPath"),
+            "status": status,
+            "auto_update_expiration": parse_aue_date(d.get("autoUpdateExpiration")),
+            "last_enrolled_time": parse_google_datetime(d.get("lastEnrollmentTime")),
+            "last_sync": parse_google_datetime(d.get("lastSync")),
+            "os_version": d.get("osVersion"),
+            "annotated_user": d.get("annotatedUser"),
+            "annotated_location": d.get("annotatedLocation"),
+            "annotated_asset_id": d.get("annotatedAssetId"),
+            "updated_at": datetime.now(timezone.utc),
+        })
 
     if not rows:
         return 0
 
-    # Postgres upsert — match on (tenant_id, device_id), update everything else
     stmt = pg_insert(Device).values(rows)
     stmt = stmt.on_conflict_do_update(
         constraint="uq_tenant_device",
