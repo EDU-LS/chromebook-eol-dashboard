@@ -34,7 +34,7 @@ function fmt(dateStr) {
   });
 }
 
-const USERS   = ["All users", "LSpencer", "HCripps", "Eduthing"];
+// Users derived dynamically from log data — see below
 const ACTIONS = [
   "All actions",
   "login_success", "login_failed",
@@ -55,6 +55,8 @@ export default function Audit() {
     queryFn: api.getAuditLogs,
     refetchInterval: 30_000,
   });
+
+  const users = ["All users", ...Array.from(new Set(logs?.map((l) => l.username) ?? [])).sort()];
 
   const filtered = logs?.filter((l) => {
     if (userFilter   !== "All users"   && l.username !== userFilter)    return false;
@@ -116,8 +118,16 @@ export default function Audit() {
           onChange={(e) => setUserFilter(e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
-          {USERS.map((u) => <option key={u}>{u}</option>)}
+          {users.map((u) => <option key={u}>{u}</option>)}
         </select>
+        {userFilter !== "All users" && (
+          <button
+            onClick={() => setUserFilter("All users")}
+            className="text-xs text-brand-600 hover:underline"
+          >
+            ✕ Clear filter
+          </button>
+        )}
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
@@ -157,12 +167,18 @@ export default function Audit() {
                         {fmt(l.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setUserFilter(l.username)}
+                          className="flex items-center gap-2 group"
+                          title={`Filter by ${l.username}`}
+                        >
                           <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
                             {l.username[0].toUpperCase()}
                           </div>
-                          <span className="font-medium text-gray-800">{l.username}</span>
-                        </div>
+                          <span className="font-medium text-gray-800 group-hover:text-brand-600 group-hover:underline">
+                            {l.username}
+                          </span>
+                        </button>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${cfg.style}`}>
