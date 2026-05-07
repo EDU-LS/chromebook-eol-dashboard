@@ -91,6 +91,19 @@ class DashboardSummary(BaseModel):
     tenants: list[TenantSummary]
 
 
+# ── Audit ─────────────────────────────────────────────────────────────────────
+
+class AuditLogOut(BaseModel):
+    id: UUID
+    username: str
+    action: str
+    detail: Optional[str]
+    ip_address: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Suggestions ───────────────────────────────────────────────────────────────
 
 class SuggestionCreate(BaseModel):

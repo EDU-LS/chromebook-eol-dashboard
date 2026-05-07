@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
-from app.api import dashboard, devices, suggestions, tenants
+from app.api import audit, dashboard, devices, suggestions, tenants
 from app.auth import get_current_user, hash_password, router as auth_router
 from app.config import settings
 from app.database import AsyncSessionLocal, engine
@@ -33,6 +33,7 @@ app.include_router(dashboard.router, prefix="/api", **protected)
 app.include_router(tenants.router, prefix="/api", **protected)
 app.include_router(devices.router, prefix="/api", **protected)
 app.include_router(suggestions.router, prefix="/api", **protected)
+app.include_router(audit.router, prefix="/api", **protected)
 
 # Seed users: username → plain password
 # The primary admin is read from env vars; extra users are listed here.

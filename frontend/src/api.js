@@ -47,6 +47,7 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/tenants/${id}/devices${qs ? `?${qs}` : ""}`);
   },
+  getAuditLogs: () => request("/audit"),
   getSuggestions: () => request("/suggestions"),
   createSuggestion: (body) => request("/suggestions", { method: "POST", body: JSON.stringify(body) }),
   updateSuggestionStatus: (id, status) => request(`/suggestions/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),

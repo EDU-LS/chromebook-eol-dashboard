@@ -1,5 +1,6 @@
 import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
-import { isAuthenticated, clearToken } from "./auth";
+import { isAuthenticated, clearToken, getCurrentUser } from "./auth";
+import Audit from "./pages/Audit";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import TenantDetail from "./pages/TenantDetail";
@@ -13,6 +14,7 @@ function ProtectedRoute({ children }) {
 function Sidebar() {
   const link = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-brand-200 hover:bg-brand-700 hover:text-white transition-colors";
   const active = "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-brand-600 text-white";
+  const me = getCurrentUser();
 
   return (
     <aside className="w-56 shrink-0 bg-brand-900 flex flex-col min-h-screen">
@@ -30,6 +32,11 @@ function Sidebar() {
         <NavLink to="/suggestions" className={({ isActive }) => (isActive ? active : link)}>
           <span>💡</span> Ideas
         </NavLink>
+        {me === "LSpencer" && (
+          <NavLink to="/audit" className={({ isActive }) => (isActive ? active : link)}>
+            <span>🔍</span> Audit log
+          </NavLink>
+        )}
       </nav>
       <div className="px-4 py-3 border-t border-brand-800">
         <div className="flex items-center justify-between mb-1">
@@ -57,6 +64,7 @@ function AppLayout() {
           <Route path="/tenant/:id" element={<TenantDetail />} />
           <Route path="/admin" element={<TenantsAdmin />} />
           <Route path="/suggestions" element={<Suggestions />} />
+          <Route path="/audit" element={<Audit />} />
         </Routes>
       </main>
     </div>

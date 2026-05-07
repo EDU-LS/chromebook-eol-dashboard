@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import bcrypt
 from jose import JWTError, jwt
@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audit import write_audit
 from app.config import settings
 from app.database import get_db
 from app.models import User
@@ -60,18 +61,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
 
 @router.post("/login", response_model=Token)
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
+    ip = request.client.host if request.client else None
     result = await db.execute(
         select(User).where(User.username == form_data.username, User.is_active == True)  # noqa: E712
     )
     user = result.scalar_one_or_none()
     if not user or not verify_password(form_data.password, user.hashed_password):
+        await write_audit(db, form_data.username or "unknown", "login_failed",
+                          "Incorrect username or password", ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
+    await write_audit(db, user.username, "login_success", None, ip)
     return Token(
         access_token=create_access_token(user.username),
         token_type="bearer",

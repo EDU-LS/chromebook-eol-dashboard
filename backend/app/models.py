@@ -103,6 +103,21 @@ class Suggestion(Base):
     comments = relationship("SuggestionComment", back_populates="suggestion", cascade="all, delete-orphan", order_by="SuggestionComment.created_at")
 
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username = Column(String(100), nullable=False, index=True)
+    action = Column(String(100), nullable=False, index=True)
+    detail = Column(Text)
+    ip_address = Column(String(50))
+    created_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+
 class SuggestionComment(Base):
     __tablename__ = "suggestion_comments"
 
