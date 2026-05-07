@@ -2,7 +2,7 @@ services:
   caddy:
     image: ghcr.io/edu-ls/chromebook-eol-dashboard-caddy:latest
     ports:
-      - "80:80"
+      - "8090:80"
     volumes:
       - caddy_data:/data
       - caddy_config:/config
