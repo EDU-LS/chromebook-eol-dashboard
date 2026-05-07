@@ -1,4 +1,4 @@
-cbeol.eduthing.co.uk {
+http://cbeol.eduthing.co.uk {
     handle /api/* {
         reverse_proxy api:8000
     }
