@@ -10,6 +10,7 @@ const ACTION_CONFIG = {
   tenant_deleted:  { label: "Customer removed",   style: "bg-red-100 text-red-700",      icon: "🗑️" },
   sync_triggered:  { label: "Sync triggered",     style: "bg-purple-100 text-purple-700",icon: "🔄" },
   sync_all:        { label: "Sync all",           style: "bg-purple-100 text-purple-700",icon: "🔄" },
+  tenant_csv_import: { label: "CSV import",       style: "bg-brand-100 text-brand-700",  icon: "📥" },
 };
 
 function fmt(dateStr) {
@@ -20,7 +21,7 @@ function fmt(dateStr) {
 }
 
 const USERS   = ["All users", "LSpencer", "HCripps", "Eduthing"];
-const ACTIONS = ["All actions", "login_success", "login_failed", "tenant_created", "tenant_updated", "tenant_deleted", "sync_triggered", "sync_all"];
+const ACTIONS = ["All actions", "login_success", "login_failed", "tenant_created", "tenant_updated", "tenant_deleted", "sync_triggered", "sync_all", "tenant_csv_import"];
 
 export default function Audit() {
   const [userFilter,   setUserFilter]   = useState("All users");

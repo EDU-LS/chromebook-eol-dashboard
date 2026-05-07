@@ -1,6 +1,21 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+
+const CSV_TEMPLATE = [
+  ["Name", "Domain", "Admin Email", "Customer ID", "Replacement Cost", "Notes"],
+  ["Example School", "example.org.uk", "admin@example.org.uk", "my_customer", "299.00", ""],
+].map((r) => r.join(",")).join("\n");
+
+function downloadTemplate() {
+  const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "customer-import-template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const EMPTY = {
   name: "", domain: "", admin_email: "",
@@ -13,9 +28,23 @@ export default function TenantsAdmin() {
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState(null);
 
+  const [importOpen, setImportOpen] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileRef = useRef(null);
+
   const { data: tenants } = useQuery({
     queryKey: ["tenants-all"],
     queryFn: () => api.getTenants(),
+  });
+
+  const importCsv = useMutation({
+    mutationFn: (file) => api.importTenantsCsv(file),
+    onSuccess: (data) => {
+      qc.invalidateQueries();
+      setImportResult(data);
+      if (fileRef.current) fileRef.current.value = "";
+    },
+    onError: (e) => setImportResult({ error: e.message }),
   });
 
   const save = useMutation({
@@ -58,7 +87,71 @@ export default function TenantsAdmin() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Customer Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Customer Management</h1>
+        <button
+          onClick={() => { setImportOpen((o) => !o); setImportResult(null); }}
+          className="inline-flex items-center gap-2 rounded-lg border border-brand-500 px-3 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors"
+        >
+          📥 {importOpen ? "Close import" : "Import CSV"}
+        </button>
+      </div>
+
+      {/* CSV Import panel */}
+      {importOpen && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-700">Bulk import from CSV</h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Required columns: <span className="font-mono">Name, Domain, Admin Email</span> — optional: Customer ID, Replacement Cost, Notes
+              </p>
+            </div>
+            <button
+              onClick={downloadTemplate}
+              className="text-xs text-brand-600 hover:underline"
+            >
+              ⬇ Download template
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) { setImportResult(null); importCsv.mutate(f); }
+              }}
+              className="block text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-brand-600 cursor-pointer"
+            />
+            {importCsv.isPending && <span className="text-sm text-gray-400">Importing…</span>}
+          </div>
+
+          {importResult && !importResult.error && (
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 space-y-2">
+              <div className="flex gap-4 text-sm">
+                <span className="text-green-700 font-semibold">✅ {importResult.added} added</span>
+                <span className="text-amber-600 font-semibold">⏭ {importResult.skipped} skipped (already exist)</span>
+                {importResult.errors.length > 0 && (
+                  <span className="text-red-600 font-semibold">❌ {importResult.errors.length} errors</span>
+                )}
+              </div>
+              {importResult.errors.length > 0 && (
+                <ul className="text-xs text-red-600 space-y-0.5 mt-1">
+                  {importResult.errors.map((e, i) => (
+                    <li key={i}>Row {e.row} ({e.domain}): {e.error}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {importResult?.error && (
+            <p className="text-sm text-red-600">{importResult.error}</p>
+          )}
+        </div>
+      )}
 
       {/* Add / Edit form */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">

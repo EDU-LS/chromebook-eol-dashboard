@@ -3,3 +3,4 @@ asyncpg==0.29.0
 google-auth==2.35.0
 google-api-python-client==2.149.0
 apscheduler==3.10.4
+pydantic-settings==2.5.2

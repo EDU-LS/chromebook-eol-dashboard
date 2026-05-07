@@ -42,6 +42,10 @@ services:
       SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
       SYNC_HOUR: ${SYNC_HOUR:-2}
       SYNC_MINUTE: ${SYNC_MINUTE:-0}
+      BACKUP_DIR: /backups
+      BACKUP_RETAIN_COUNT: ${BACKUP_RETAIN_COUNT:-4}
+    volumes:
+      - db_backups:/backups
     networks:
       - internal
     depends_on:
@@ -70,6 +74,7 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  db_backups:
 
 networks:
   internal:
