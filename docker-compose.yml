@@ -15,15 +15,13 @@ services:
       - frontend
 
   frontend:
-    build:
-      context: ./frontend
+    image: ghcr.io/edu-ls/chromebook-eol-dashboard-frontend:latest
     networks:
       - proxy
     restart: unless-stopped
 
   api:
-    build:
-      context: ./backend
+    image: ghcr.io/edu-ls/chromebook-eol-dashboard-api:latest
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
       SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
@@ -37,9 +35,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: .
-      dockerfile: worker/Dockerfile
+    image: ghcr.io/edu-ls/chromebook-eol-dashboard-worker:latest
     environment:
       DATABASE_URL: postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/chromebook_eol
       SERVICE_ACCOUNT_B64: ${SERVICE_ACCOUNT_B64}
