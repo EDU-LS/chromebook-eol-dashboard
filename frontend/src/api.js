@@ -47,6 +47,12 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/tenants/${id}/devices${qs ? `?${qs}` : ""}`);
   },
+  getAllDevices: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== ""))
+    ).toString();
+    return request(`/devices${qs ? `?${qs}` : ""}`);
+  },
   getAuditLogs: () => request("/audit"),
   logAudit: (action, detail) => request("/audit/log", { method: "POST", body: JSON.stringify({ action, detail }) }),
   importTenantsCsv: (file) => {

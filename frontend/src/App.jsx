@@ -2,6 +2,7 @@ import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-do
 import { isAuthenticated, clearToken, getCurrentUser } from "./auth";
 import Audit from "./pages/Audit";
 import Dashboard from "./pages/Dashboard";
+import Devices from "./pages/Devices";
 import Login from "./pages/Login";
 import TenantDetail from "./pages/TenantDetail";
 import TenantsAdmin from "./pages/TenantsAdmin";
@@ -28,6 +29,9 @@ function Sidebar() {
         </NavLink>
         <NavLink to="/admin" className={({ isActive }) => (isActive ? active : link)}>
           <span>⚙️</span> Customers
+        </NavLink>
+        <NavLink to="/devices" className={({ isActive }) => (isActive ? active : link)}>
+          <span>💻</span> Devices
         </NavLink>
         <NavLink to="/suggestions" className={({ isActive }) => (isActive ? active : link)}>
           <span>💡</span> Ideas
@@ -63,6 +67,7 @@ function AppLayout() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/tenant/:id" element={<TenantDetail />} />
           <Route path="/admin" element={<TenantsAdmin />} />
+          <Route path="/devices" element={<Devices />} />
           <Route path="/suggestions" element={<Suggestions />} />
           <Route path="/audit" element={<Audit />} />
         </Routes>

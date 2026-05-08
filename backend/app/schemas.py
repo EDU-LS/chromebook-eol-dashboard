@@ -65,6 +65,11 @@ class DeviceOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DeviceWithTenantOut(DeviceOut):
+    tenant_name: Optional[str] = None
+    tenant_id: Optional[UUID] = None
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 class TenantSummary(BaseModel):

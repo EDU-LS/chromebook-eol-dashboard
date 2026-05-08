@@ -53,6 +53,7 @@ export default function TenantDetail() {
   const [sortKey, setSortKey] = useState("auto_update_expiration");
   const [sortDir, setSortDir] = useState("asc");
   const [search, setSearch] = useState("");
+  const [eolFilter, setEolFilter] = useState(null); // null|'expired'|'expiring_12m'|'flex'
 
   useEffect(() => { api.logAudit("tenant_view", `Viewed customer ID: ${id}`).catch(() => {}); }, [id]);
 
@@ -69,13 +70,26 @@ export default function TenantDetail() {
   const sortedFiltered = useMemo(() => {
     if (!devices) return [];
     const q = search.toLowerCase();
-    const filtered = devices.filter(
-      (d) =>
+    const filtered = devices.filter((d) => {
+      // text search
+      if (q && !(
         (d.serial_number ?? "").toLowerCase().includes(q) ||
         (d.model ?? "").toLowerCase().includes(q) ||
         (d.annotated_user ?? "").toLowerCase().includes(q) ||
-        (d.annotated_location ?? "").toLowerCase().includes(q),
-    );
+        (d.annotated_location ?? "").toLowerCase().includes(q)
+      )) return false;
+      // EOL filter
+      if (eolFilter) {
+        const eolDate = d.is_chromeos_flex && d.flex_eol_year
+          ? new Date(d.flex_eol_year, 11, 31)
+          : d.auto_update_expiration ? new Date(d.auto_update_expiration) : null;
+        const daysLeft = eolDate ? (eolDate - now) / 86400000 : null;
+        if (eolFilter === "expired"      && (daysLeft === null || daysLeft >= 0)) return false;
+        if (eolFilter === "expiring_12m" && (daysLeft === null || daysLeft < 0 || daysLeft > 365)) return false;
+        if (eolFilter === "flex"         && !d.is_chromeos_flex) return false;
+      }
+      return true;
+    });
     return [...filtered].sort((a, b) => {
       const av = a[sortKey] ?? "";
       const bv = b[sortKey] ?? "";
@@ -122,10 +136,14 @@ export default function TenantDetail() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Active devices" value={devices?.length ?? "…"} accent="brand" />
-        <StatCard label="ChromeOS Flex" value={flexDevices.length} accent="brand" />
-        <StatCard label="Expired" value={expired.length} accent="red" />
-        <StatCard label="Expiring ≤12mo" value={expiring12.length} accent="amber" />
+        <StatCard label="Active devices" value={devices?.length ?? "…"} accent="brand"
+          onClick={() => setEolFilter(null)} active={eolFilter === null} />
+        <StatCard label="ChromeOS Flex" value={flexDevices.length} accent="brand"
+          onClick={() => setEolFilter(f => f === "flex" ? null : "flex")} active={eolFilter === "flex"} />
+        <StatCard label="Expired" value={expired.length} accent="red"
+          onClick={() => setEolFilter(f => f === "expired" ? null : "expired")} active={eolFilter === "expired"} />
+        <StatCard label="Expiring ≤12mo" value={expiring12.length} accent="amber"
+          onClick={() => setEolFilter(f => f === "expiring_12m" ? null : "expiring_12m")} active={eolFilter === "expiring_12m"} />
         <StatCard label="Est. 12mo pipeline" value={fmt(expiring12.length * Number(tenant.device_replacement_cost))} accent="green" />
       </div>
 

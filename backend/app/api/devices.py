@@ -1,4 +1,4 @@
-"""Device listing endpoint — per-tenant device detail view."""
+"""Device listing endpoints — per-tenant and global views."""
 
 import uuid
 from typing import Optional
@@ -9,12 +9,63 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Device, Tenant
-from app.schemas import DeviceOut
+from app.schemas import DeviceOut, DeviceWithTenantOut
 
-router = APIRouter(prefix="/tenants/{tenant_id}/devices", tags=["devices"])
+router = APIRouter(tags=["devices"])
+
+# ── Global all-devices endpoint ───────────────────────────────────────────────
+
+@router.get("/devices", response_model=list[DeviceWithTenantOut])
+async def list_all_devices(
+    search: Optional[str] = Query(None),
+    tenant_id: Optional[uuid.UUID] = Query(None),
+    is_flex: Optional[bool] = Query(None),
+    limit: int = Query(2000, le=5000),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return all active devices across all tenants, with tenant name included."""
+    q = (
+        select(Device, Tenant.name.label("tenant_name"))
+        .join(Tenant, Device.tenant_id == Tenant.id)
+        .where(Device.status == "ACTIVE")
+    )
+    if tenant_id:
+        q = q.where(Device.tenant_id == tenant_id)
+    if is_flex is not None:
+        q = q.where(Device.is_chromeos_flex == is_flex)
+    q = q.order_by(Device.auto_update_expiration.asc().nullslast()).limit(limit)
+
+    result = await db.execute(q)
+    rows = result.all()
+
+    devices = []
+    for row in rows:
+        d = row[0]
+        out = DeviceWithTenantOut.model_validate(d)
+        out.tenant_name = row[1]
+        devices.append(out)
+
+    # Client-side search across serial/model/user/location (fast enough at 2k rows)
+    if search:
+        q_lower = search.lower()
+        devices = [
+            d for d in devices if (
+                q_lower in (d.serial_number or "").lower() or
+                q_lower in (d.model or "").lower() or
+                q_lower in (d.annotated_user or "").lower() or
+                q_lower in (d.annotated_location or "").lower() or
+                q_lower in (d.tenant_name or "").lower()
+            )
+        ]
+    return devices
 
 
-@router.get("", response_model=list[DeviceOut])
+# ── Per-tenant devices endpoint ───────────────────────────────────────────────
+
+per_tenant_router = APIRouter(prefix="/tenants/{tenant_id}/devices", tags=["devices"])
+
+
+@per_tenant_router.get("", response_model=list[DeviceOut])
 async def list_devices(
     tenant_id: uuid.UUID,
     status: Optional[str] = Query(None, description="Filter by status e.g. ACTIVE"),

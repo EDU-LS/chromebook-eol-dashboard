@@ -4,7 +4,8 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 
-from app.api import audit, dashboard, devices, suggestions, tenants
+from app.api import audit, dashboard, suggestions, tenants
+from app.api.devices import router as devices_router, per_tenant_router as devices_per_tenant_router
 from app.auth import get_current_user, hash_password, router as auth_router
 from app.config import settings
 from app.database import AsyncSessionLocal, engine
@@ -31,7 +32,8 @@ app.include_router(auth_router, prefix="/api")
 protected = {"dependencies": [Depends(get_current_user)]}
 app.include_router(dashboard.router, prefix="/api", **protected)
 app.include_router(tenants.router, prefix="/api", **protected)
-app.include_router(devices.router, prefix="/api", **protected)
+app.include_router(devices_router, prefix="/api", **protected)
+app.include_router(devices_per_tenant_router, prefix="/api", **protected)
 app.include_router(suggestions.router, prefix="/api", **protected)
 app.include_router(audit.router, prefix="/api", **protected)
 
