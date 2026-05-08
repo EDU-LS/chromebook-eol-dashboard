@@ -23,7 +23,7 @@ const ACTION_CONFIG = {
   csv_export_tenant:        { label: "CSV export (customer)", style: "bg-green-100 text-green-700",   icon: "⬇️" },
   // Ideas
   suggestion_created:       { label: "Idea posted",           style: "bg-amber-100 text-amber-700",   icon: "💡" },
-  suggestion_status_changed:{ label: "Idea status changed",   style: "bg-amber-100 text-amber-700",   icon: "🏷️" },
+  suggestion_status_changed:{ label: "Idea status changed",   style: "bg-blue-100 text-blue-700",     icon: "🏷️" },
   comment_added:            { label: "Reply posted",          style: "bg-amber-100 text-amber-700",   icon: "💬" },
 };
 

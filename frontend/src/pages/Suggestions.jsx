@@ -10,12 +10,14 @@ const EMPTY = { title: "", category: "Feature request", description: "", submitt
 const STATUS_CONFIG = {
   pending:          { label: "Pending",          style: "bg-gray-100 text-gray-600" },
   to_be_discussed:  { label: "To be Discussed",  style: "bg-amber-100 text-amber-700" },
+  in_progress:      { label: "In Progress",      style: "bg-blue-100 text-blue-700" },
   complete:         { label: "Complete",          style: "bg-green-100 text-green-700" },
 };
 
 const STATUS_BUTTONS = [
   { value: "pending",         label: "Pending",          active: "bg-gray-500 text-white",   idle: "border border-gray-300 text-gray-600 hover:bg-gray-50" },
   { value: "to_be_discussed", label: "To be Discussed",  active: "bg-amber-500 text-white",  idle: "border border-amber-300 text-amber-700 hover:bg-amber-50" },
+  { value: "in_progress",     label: "In Progress",      active: "bg-blue-600 text-white",   idle: "border border-blue-300 text-blue-700 hover:bg-blue-50" },
   { value: "complete",        label: "Complete",         active: "bg-green-600 text-white",  idle: "border border-green-300 text-green-700 hover:bg-green-50" },
 ];
 
@@ -275,6 +277,7 @@ export default function Suggestions() {
           { value: "all",              label: `All (${suggestions?.length ?? 0})` },
           { value: "pending",          label: `Pending (${suggestions?.filter((s) => s.status === "pending").length ?? 0})` },
           { value: "to_be_discussed",  label: `To be Discussed (${suggestions?.filter((s) => s.status === "to_be_discussed").length ?? 0})` },
+          { value: "in_progress",      label: `In Progress (${suggestions?.filter((s) => s.status === "in_progress").length ?? 0})` },
           { value: "complete",         label: `Complete (${suggestions?.filter((s) => s.status === "complete").length ?? 0})` },
         ].map((tab) => (
           <button
