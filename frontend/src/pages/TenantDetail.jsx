@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
-import EolBadge from "../components/EolBadge";
+import EolBadge, { FlexBadge } from "../components/EolBadge";
 import StatCard from "../components/StatCard";
 import SyncButton from "../components/SyncButton";
 
@@ -92,10 +92,19 @@ export default function TenantDetail() {
   if (!tenant) return <div className="p-8 text-gray-500">Loading…</div>;
 
   const now = new Date();
-  const expired = devices?.filter((d) => d.auto_update_expiration && new Date(d.auto_update_expiration) < now) ?? [];
+  const flexDevices = devices?.filter((d) => d.is_chromeos_flex) ?? [];
+  const expired = devices?.filter((d) => {
+    if (d.is_chromeos_flex && d.flex_eol_year) {
+      return new Date(d.flex_eol_year, 11, 31) < now;
+    }
+    return d.auto_update_expiration && new Date(d.auto_update_expiration) < now;
+  }) ?? [];
   const expiring12 = devices?.filter((d) => {
-    if (!d.auto_update_expiration) return false;
-    const diff = (new Date(d.auto_update_expiration) - now) / 86400000;
+    const eolDate = d.is_chromeos_flex && d.flex_eol_year
+      ? new Date(d.flex_eol_year, 11, 31)
+      : d.auto_update_expiration ? new Date(d.auto_update_expiration) : null;
+    if (!eolDate) return false;
+    const diff = (eolDate - now) / 86400000;
     return diff >= 0 && diff <= 365;
   }) ?? [];
 
@@ -112,8 +121,9 @@ export default function TenantDetail() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Active devices" value={devices?.length ?? "…"} accent="brand" />
+        <StatCard label="ChromeOS Flex" value={flexDevices.length} accent="brand" />
         <StatCard label="Expired" value={expired.length} accent="red" />
         <StatCard label="Expiring ≤12mo" value={expiring12.length} accent="amber" />
         <StatCard label="Est. 12mo pipeline" value={fmt(expiring12.length * Number(tenant.device_replacement_cost))} accent="green" />
@@ -163,11 +173,21 @@ export default function TenantDetail() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {sortedFiltered.map((d) => (
-                  <tr key={d.id} className="hover:bg-brand-50">
+                  <tr key={d.id} className={`hover:bg-brand-50 ${d.is_chromeos_flex ? "bg-blue-50/30" : ""}`}>
                     <td className="px-4 py-2 font-mono text-xs text-gray-700">{d.serial_number ?? "—"}</td>
-                    <td className="px-4 py-2 text-gray-800">{d.model ?? "—"}</td>
+                    <td className="px-4 py-2 text-gray-800">
+                      <div className="flex items-center gap-2">
+                        <span>{d.model ?? "—"}</span>
+                        {d.is_chromeos_flex && <FlexBadge flexStatus={d.flex_status} />}
+                      </div>
+                    </td>
                     <td className="px-4 py-2">
-                      <EolBadge date={d.auto_update_expiration} />
+                      <EolBadge
+                        date={d.auto_update_expiration}
+                        isFlex={d.is_chromeos_flex}
+                        flexEolYear={d.flex_eol_year}
+                        flexStatus={d.flex_status}
+                      />
                     </td>
                     <td className="px-4 py-2 text-gray-500 truncate max-w-[140px]">{d.annotated_user ?? "—"}</td>
                     <td className="px-4 py-2 text-gray-500">{d.annotated_location ?? "—"}</td>

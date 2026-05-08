@@ -2,7 +2,7 @@ import logging
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.api import audit, dashboard, devices, suggestions, tenants
 from app.auth import get_current_user, hash_password, router as auth_router
@@ -60,10 +60,23 @@ async def seed_users():
         await db.commit()
 
 
+async def run_migrations():
+    """Add any new columns that may not exist in the live DB (idempotent)."""
+    migrations = [
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS is_chromeos_flex BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS flex_eol_year INTEGER",
+        "ALTER TABLE devices ADD COLUMN IF NOT EXISTS flex_status VARCHAR(50)",
+    ]
+    async with engine.begin() as conn:
+        for sql in migrations:
+            await conn.execute(text(sql))
+
+
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await run_migrations()
     await seed_users()
     start_scheduler()
 

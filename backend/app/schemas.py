@@ -58,6 +58,9 @@ class DeviceOut(BaseModel):
     annotated_location: Optional[str]
     annotated_asset_id: Optional[str]
     last_sync: Optional[datetime]
+    is_chromeos_flex: bool = False
+    flex_eol_year: Optional[int] = None
+    flex_status: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.models import Device, SyncLog, Tenant
+from app.sync.flex_lookup import is_flex_device
 from app.sync.google_client import (
     get_delegated_credentials,
     list_chrome_devices,
@@ -147,12 +148,14 @@ async def _upsert_devices(
         status = d.get("status", "")
         if status == "DEPROVISIONED":
             continue
+        model = d.get("model")
+        is_flex, flex_eol_year, flex_status = is_flex_device(model or "")
         rows.append({
             "id": uuid.uuid4(),
             "tenant_id": tenant_id,
             "device_id": d["deviceId"],
             "serial_number": d.get("serialNumber"),
-            "model": d.get("model"),
+            "model": model,
             "org_unit_path": d.get("orgUnitPath"),
             "status": status,
             "auto_update_expiration": parse_aue_date(d.get("autoUpdateExpiration")),
@@ -162,6 +165,9 @@ async def _upsert_devices(
             "annotated_user": d.get("annotatedUser"),
             "annotated_location": d.get("annotatedLocation"),
             "annotated_asset_id": d.get("annotatedAssetId"),
+            "is_chromeos_flex": is_flex,
+            "flex_eol_year": flex_eol_year,
+            "flex_status": flex_status,
             "updated_at": datetime.now(timezone.utc),
         })
 
@@ -183,6 +189,9 @@ async def _upsert_devices(
             "annotated_user": stmt.excluded.annotated_user,
             "annotated_location": stmt.excluded.annotated_location,
             "annotated_asset_id": stmt.excluded.annotated_asset_id,
+            "is_chromeos_flex": stmt.excluded.is_chromeos_flex,
+            "flex_eol_year": stmt.excluded.flex_eol_year,
+            "flex_status": stmt.excluded.flex_status,
             "updated_at": stmt.excluded.updated_at,
         },
     )

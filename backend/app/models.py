@@ -60,6 +60,10 @@ class Device(Base):
     annotated_user = Column(String(255))
     annotated_location = Column(String(255))
     annotated_asset_id = Column(String(255))
+    # ChromeOS Flex detection
+    is_chromeos_flex = Column(Boolean, nullable=False, default=False)
+    flex_eol_year = Column(Integer)          # e.g. 2028
+    flex_status = Column(String(50))         # Certified / Decertified / Minor issues expected
     created_at = Column(
         DateTime(timezone=True), nullable=False,
         default=lambda: datetime.now(timezone.utc),
