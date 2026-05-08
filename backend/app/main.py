@@ -41,6 +41,7 @@ SEED_USERS = [
     (settings.auth_username, settings.auth_password),
     ("LSpencer",             "Px8#Qv2mKb"),
     ("HCripps",              "Rw5!Tn9cYj"),
+    ("HMarques",             "X#dT5CHhh56X"),
 ]
 
 
