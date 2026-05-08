@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import EolBadge, { FlexBadge } from "../components/EolBadge";
 
@@ -56,15 +56,16 @@ function exportCSV(devices) {
 
 export default function Devices() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [search, setSearch]         = useState("");
-  const [eolFilter, setEolFilter]   = useState("");
+  const [eolFilter, setEolFilter]   = useState(searchParams.get("eol") ?? "");
   const [customerFilter, setCustomerFilter] = useState("");
   const [sortKey, setSortKey]       = useState("auto_update_expiration");
   const [sortDir, setSortDir]       = useState("asc");
 
   const { data: devices, isLoading } = useQuery({
     queryKey: ["all-devices"],
-    queryFn: () => api.getAllDevices({ limit: 2000 }),
+    queryFn: () => api.getAllDevices({ limit: 10000 }),
     staleTime: 60_000,
   });
 

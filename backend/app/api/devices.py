@@ -20,7 +20,7 @@ async def list_all_devices(
     search: Optional[str] = Query(None),
     tenant_id: Optional[uuid.UUID] = Query(None),
     is_flex: Optional[bool] = Query(None),
-    limit: int = Query(2000, le=5000),
+    limit: int = Query(10000, le=50000),
     db: AsyncSession = Depends(get_db),
 ):
     """Return all active devices across all tenants, with tenant name included."""

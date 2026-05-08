@@ -51,7 +51,7 @@ export const api = {
     const qs = new URLSearchParams(
       Object.fromEntries(Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== ""))
     ).toString();
-    return request(`/devices${qs ? `?${qs}` : ""}`);
+    return request(`/devices${qs ? `?${qs}` : ""}`, {}, 60000);
   },
   getAuditLogs: () => request("/audit"),
   logAudit: (action, detail) => request("/audit/log", { method: "POST", body: JSON.stringify({ action, detail }) }),

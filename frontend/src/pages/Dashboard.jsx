@@ -108,13 +108,13 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div className="flex flex-wrap justify-center gap-4">
-        <StatCard label="Active devices" value={data.total_active_devices.toLocaleString()} accent="brand" />
-        <StatCard label="Expired" value={data.total_expired.toLocaleString()} accent="red" />
-        <StatCard label="Expiring ≤12mo" value={data.total_expiring_12m.toLocaleString()} accent="amber" />
-        <StatCard label="Expiring ≤24mo" value={data.total_expiring_24m.toLocaleString()} accent="amber" />
-        <StatCard label="Pipeline 12mo" value={fmt(data.total_pipeline_12m)} sub="estimated replacement" accent="green" />
-        <StatCard label="Pipeline 24mo" value={fmt(data.total_pipeline_24m)} sub="estimated replacement" accent="purple" />
-        <StatCard label="Customers" value={data.total_tenants} accent="brand" />
+        <StatCard label="Active devices"  value={data.total_active_devices.toLocaleString()} accent="brand"  onClick={() => navigate("/devices")} />
+        <StatCard label="Expired"         value={data.total_expired.toLocaleString()}         accent="red"    onClick={() => navigate("/devices?eol=expired")} />
+        <StatCard label="Expiring ≤12mo"  value={data.total_expiring_12m.toLocaleString()}    accent="amber"  onClick={() => navigate("/devices?eol=expiring_12m")} />
+        <StatCard label="Expiring ≤24mo"  value={data.total_expiring_24m.toLocaleString()}    accent="amber"  onClick={() => navigate("/devices?eol=expiring_24m")} />
+        <StatCard label="Pipeline 12mo"   value={fmt(data.total_pipeline_12m)} sub="estimated replacement" accent="green" />
+        <StatCard label="Pipeline 24mo"   value={fmt(data.total_pipeline_24m)} sub="estimated replacement" accent="purple" />
+        <StatCard label="Customers"       value={data.total_tenants}                           accent="brand"  onClick={() => navigate("/admin")} />
       </div>
 
       {/* Pipeline chart */}
