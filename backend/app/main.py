@@ -71,6 +71,9 @@ async def run_migrations():
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS is_chromeos_flex BOOLEAN NOT NULL DEFAULT FALSE",
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS flex_eol_year INTEGER",
         "ALTER TABLE devices ADD COLUMN IF NOT EXISTS flex_status VARCHAR(50)",
+        # Allow iPad-only tenants with no Google Admin credentials
+        "ALTER TABLE tenants ALTER COLUMN admin_email DROP NOT NULL",
+        "ALTER TABLE tenants ALTER COLUMN customer_id DROP NOT NULL",
     ]
     async with engine.begin() as conn:
         for sql in migrations:

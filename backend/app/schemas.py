@@ -12,8 +12,8 @@ from pydantic import BaseModel, EmailStr
 class TenantCreate(BaseModel):
     name: str
     domain: str
-    admin_email: EmailStr
-    customer_id: str = "my_customer"
+    admin_email: Optional[EmailStr] = None   # omit for iPad-only tenants
+    customer_id: Optional[str] = "my_customer"
     device_replacement_cost: Decimal = Decimal("299.00")
     notes: Optional[str] = None
 
@@ -31,8 +31,8 @@ class TenantOut(BaseModel):
     id: UUID
     name: str
     domain: str
-    admin_email: str
-    customer_id: str
+    admin_email: Optional[str]
+    customer_id: Optional[str]
     device_replacement_cost: Decimal
     is_active: bool
     notes: Optional[str]

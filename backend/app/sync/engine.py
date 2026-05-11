@@ -39,7 +39,9 @@ async def run_full_sync(
             tenants = [row] if row else []
         else:
             result = await session.execute(
-                select(Tenant).where(Tenant.is_active == True).order_by(Tenant.name)
+                select(Tenant)
+                .where(Tenant.is_active == True, Tenant.admin_email.isnot(None))
+                .order_by(Tenant.name)
             )
             tenants = list(result.scalars().all())
 
@@ -80,6 +82,11 @@ async def sync_tenant(
     session.add(log)
     await session.flush()
     log_id = log.id
+
+    # iPad-only tenants have no Google credentials — skip silently
+    if not tenant.admin_email:
+        logger.info("Skipping Chromebook sync for %s — iPad-only tenant (no admin email)", tenant.name)
+        return False
 
     logger.info("Syncing tenant: %s (%s)", tenant.name, tenant.domain)
 

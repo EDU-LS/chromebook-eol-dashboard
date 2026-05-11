@@ -4,7 +4,8 @@ import { api } from "../api";
 
 const CSV_TEMPLATE = [
   ["Name", "Domain", "Admin Email", "Customer ID", "Replacement Cost", "Notes"],
-  ["Example School", "example.org.uk", "admin@example.org.uk", "my_customer", "299.00", ""],
+  ["Example School (Chromebooks)", "example.org.uk", "admin@example.org.uk", "my_customer", "299.00", ""],
+  ["iPad Only School", "ipadschool.org.uk", "", "", "299.00", "iPad only"],
 ].map((r) => r.join(",")).join("\n");
 
 function downloadTemplate() {
@@ -78,6 +79,8 @@ export default function TenantsAdmin() {
     e.preventDefault();
     save.mutate({
       ...form,
+      admin_email: form.admin_email.trim() || null,
+      customer_id: form.customer_id.trim() || null,
       device_replacement_cost: parseFloat(form.device_replacement_cost),
     });
   }
@@ -104,7 +107,8 @@ export default function TenantsAdmin() {
             <div>
               <h2 className="text-sm font-semibold text-gray-700">Bulk import from CSV</h2>
               <p className="text-xs text-gray-500 mt-0.5">
-                Required columns: <span className="font-mono">Name, Domain, Admin Email</span> — optional: Customer ID, Replacement Cost, Notes
+                Required: <span className="font-mono">Name, Domain</span> — optional: Admin Email, Customer ID, Replacement Cost, Notes.
+                Leave Admin Email blank for iPad-only schools.
               </p>
             </div>
             <button
@@ -166,17 +170,23 @@ export default function TenantsAdmin() {
               onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>
-            <label className={label}>Google Workspace domain *</label>
+            <label className={label}>Domain *</label>
             <input required className={field} placeholder="school.org.uk" value={form.domain}
               onChange={(e) => setForm({ ...form, domain: e.target.value })} />
           </div>
           <div>
-            <label className={label}>Admin email for DWD *</label>
-            <input required type="email" className={field} placeholder="admin@school.org.uk" value={form.admin_email}
+            <label className={label}>
+              Admin email for Google DWD
+              <span className="ml-1 text-gray-400 font-normal">(leave blank for iPad-only)</span>
+            </label>
+            <input type="email" className={field} placeholder="admin@school.org.uk" value={form.admin_email}
               onChange={(e) => setForm({ ...form, admin_email: e.target.value })} />
           </div>
           <div>
-            <label className={label}>Google customer ID</label>
+            <label className={label}>
+              Google customer ID
+              <span className="ml-1 text-gray-400 font-normal">(leave blank for iPad-only)</span>
+            </label>
             <input className={field} placeholder="my_customer" value={form.customer_id}
               onChange={(e) => setForm({ ...form, customer_id: e.target.value })} />
           </div>
@@ -210,7 +220,7 @@ export default function TenantsAdmin() {
         <table className="min-w-full divide-y divide-gray-100 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {["Name", "Domain", "Admin email", "Cost/device", "Status", "Actions"].map((h) => (
+              {["Name", "Domain", "Type", "Admin email", "Cost/device", "Status", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
               ))}
             </tr>
@@ -220,7 +230,13 @@ export default function TenantsAdmin() {
               <tr key={t.id}>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.domain}</td>
-                <td className="px-4 py-3 text-gray-500">{t.admin_email}</td>
+                <td className="px-4 py-3">
+                  {t.admin_email
+                    ? <span className="rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5 font-medium">💻 Chromebooks</span>
+                    : <span className="rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-0.5 font-medium">📱 iPad only</span>
+                  }
+                </td>
+                <td className="px-4 py-3 text-gray-500 text-sm">{t.admin_email ?? <span className="text-gray-300">—</span>}</td>
                 <td className="px-4 py-3">£{t.device_replacement_cost}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${

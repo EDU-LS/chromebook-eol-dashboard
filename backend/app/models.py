@@ -21,9 +21,9 @@ class Tenant(Base):
     name = Column(String(255), nullable=False)
     domain = Column(String(255), unique=True, nullable=False, index=True)
     # Admin email used for DWD impersonation — must be a Super Admin in that Workspace
-    admin_email = Column(String(255), nullable=False)
+    admin_email = Column(String(255), nullable=True)   # None = iPad-only, no Google Admin
     # 'my_customer' works for most; set to C-prefix ID if needed
-    customer_id = Column(String(100), nullable=False, default="my_customer")
+    customer_id = Column(String(100), nullable=True, default="my_customer")
     device_replacement_cost = Column(Numeric(10, 2), nullable=False, default=Decimal("299.00"))
     is_active = Column(Boolean, nullable=False, default=True)
     notes = Column(Text)

@@ -135,7 +135,7 @@ export default function TenantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("chromebooks"); // 'chromebooks' | 'ipads'
+  const [activeTab, setActiveTab] = useState(null); // null = auto-detect on tenant load
   const [sortKey, setSortKey] = useState("auto_update_expiration");
   const [sortDir, setSortDir] = useState("asc");
   const [search, setSearch] = useState("");
@@ -147,7 +147,16 @@ export default function TenantDetail() {
 
   useEffect(() => { api.logAudit("tenant_view", `Viewed customer ID: ${id}`).catch(() => {}); }, [id]);
 
-  const { data: tenant } = useQuery({ queryKey: ["tenant", id], queryFn: () => api.getTenant(id) });
+  const { data: tenant } = useQuery({
+    queryKey: ["tenant", id],
+    queryFn: () => api.getTenant(id),
+    onSuccess: (t) => {
+      if (activeTab === null) setActiveTab(t.admin_email ? "chromebooks" : "ipads");
+    },
+  });
+
+  // Derive current tab — default to ipads for iPad-only tenants once loaded
+  const currentTab = activeTab ?? (tenant ? (tenant.admin_email ? "chromebooks" : "ipads") : "chromebooks");
   const { data: devices, isLoading } = useQuery({
     queryKey: ["devices", id],
     queryFn: () => api.getDevices(id, { status: "ACTIVE", limit: 1000 }),
@@ -260,20 +269,23 @@ export default function TenantDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
           <p className="text-sm text-gray-500 font-mono">{tenant.domain}</p>
         </div>
-        <SyncButton tenantId={id} label="Sync customer" />
+        {tenant.admin_email
+          ? <SyncButton tenantId={id} label="Sync customer" />
+          : <span className="rounded-full bg-blue-100 text-blue-700 text-xs px-3 py-1.5 font-medium">📱 iPad only</span>
+        }
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-gray-200">
         {[
-          { key: "chromebooks", label: `💻 Chromebooks${devices ? ` (${devices.length})` : ""}` },
+          { key: "chromebooks", label: `💻 Chromebooks${devices ? ` (${devices.length})` : ""}`, hidden: !tenant?.admin_email },
           { key: "ipads",       label: `📱 iPads${iosDevices ? ` (${iosDevices.length})` : ""}` },
-        ].map((tab) => (
+        ].filter(tab => !tab.hidden).map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.key
+              currentTab === tab.key
                 ? "border-brand-500 text-brand-600"
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
@@ -284,7 +296,7 @@ export default function TenantDetail() {
       </div>
 
       {/* ── CHROMEBOOKS TAB ─────────────────────────────────────────────────── */}
-      {activeTab === "chromebooks" && (
+      {currentTab === "chromebooks" && (
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -415,7 +427,7 @@ export default function TenantDetail() {
       )}
 
       {/* ── iPADS TAB ───────────────────────────────────────────────────────── */}
-      {activeTab === "ipads" && (
+      {currentTab === "ipads" && (
         <>
           {/* Import bar */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-wrap items-center gap-3">
