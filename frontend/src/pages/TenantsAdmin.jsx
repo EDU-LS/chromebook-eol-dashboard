@@ -2,6 +2,18 @@ import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
 
+export function TenantTypeBadge({ tenant }) {
+  const hasChromebooks = !!tenant.admin_email;
+  const hasIpads = (tenant.ios_device_count ?? 0) > 0;
+  if (hasChromebooks && hasIpads) {
+    return <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 text-purple-700 text-xs px-2 py-0.5 font-medium">💻 + 📱 Both</span>;
+  }
+  if (hasChromebooks) {
+    return <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5 font-medium">💻 Chromebooks</span>;
+  }
+  return <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-0.5 font-medium">📱 iPad only</span>;
+}
+
 const CSV_TEMPLATE = [
   ["Name", "Domain", "Admin Email", "Customer ID", "Replacement Cost", "Notes"],
   ["Example School (Chromebooks)", "example.org.uk", "admin@example.org.uk", "my_customer", "299.00", ""],
@@ -231,10 +243,7 @@ export default function TenantsAdmin() {
                 <td className="px-4 py-3 font-medium">{t.name}</td>
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.domain}</td>
                 <td className="px-4 py-3">
-                  {t.admin_email
-                    ? <span className="rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5 font-medium">💻 Chromebooks</span>
-                    : <span className="rounded-full bg-blue-50 text-blue-700 text-xs px-2 py-0.5 font-medium">📱 iPad only</span>
-                  }
+                  <TenantTypeBadge tenant={t} />
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-sm">{t.admin_email ?? <span className="text-gray-300">—</span>}</td>
                 <td className="px-4 py-3">£{t.device_replacement_cost}</td>

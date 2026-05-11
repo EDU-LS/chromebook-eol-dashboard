@@ -5,6 +5,7 @@ import { api } from "../api";
 import EolBadge, { FlexBadge } from "../components/EolBadge";
 import StatCard from "../components/StatCard";
 import SyncButton from "../components/SyncButton";
+import { TenantTypeBadge } from "./TenantsAdmin";
 
 function fmt(n) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n);
@@ -269,10 +270,8 @@ export default function TenantDetail() {
           <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
           <p className="text-sm text-gray-500 font-mono">{tenant.domain}</p>
         </div>
-        {tenant.admin_email
-          ? <SyncButton tenantId={id} label="Sync customer" />
-          : <span className="rounded-full bg-blue-100 text-blue-700 text-xs px-3 py-1.5 font-medium">📱 iPad only</span>
-        }
+        <TenantTypeBadge tenant={tenant} />
+        {tenant.admin_email && <SyncButton tenantId={id} label="Sync customer" />}
       </div>
 
       {/* Tab bar */}

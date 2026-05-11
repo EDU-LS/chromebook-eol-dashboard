@@ -39,6 +39,7 @@ class TenantOut(BaseModel):
     created_at: datetime
     last_synced_at: Optional[datetime]
     last_sync_status: str
+    ios_device_count: int = 0   # populated by endpoints via subquery
 
     model_config = {"from_attributes": True}
 

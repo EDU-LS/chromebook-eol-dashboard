@@ -6,26 +6,42 @@ import uuid
 from decimal import Decimal, InvalidOperation
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, UploadFile, File, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audit import write_audit
 from app.auth import get_current_user
 from app.config import settings
 from app.database import AsyncSessionLocal, get_db
-from app.models import SyncLog, Tenant
+from app.models import IosDevice, SyncLog, Tenant
 from app.schemas import SyncLogOut, TenantCreate, TenantOut, TenantUpdate
 from app.sync.engine import run_full_sync
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 
 
+def _with_ios_count(q):
+    """Annotate a Tenant query with ios_device_count via left-join subquery."""
+    return (
+        q.add_columns(func.count(IosDevice.id).label("ios_device_count"))
+        .outerjoin(IosDevice, IosDevice.tenant_id == Tenant.id)
+        .group_by(Tenant.id)
+    )
+
+
+def _build_tenant_out(tenant: Tenant, ios_count: int) -> TenantOut:
+    out = TenantOut.model_validate(tenant)
+    out.ios_device_count = ios_count
+    return out
+
+
 @router.get("", response_model=list[TenantOut])
 async def list_tenants(active_only: bool = True, db: AsyncSession = Depends(get_db)):
-    q = select(Tenant).order_by(Tenant.name)
+    q = _with_ios_count(select(Tenant).order_by(Tenant.name))
     if active_only:
         q = q.where(Tenant.is_active == True)  # noqa: E712
-    return (await db.execute(q)).scalars().all()
+    rows = (await db.execute(q)).all()
+    return [_build_tenant_out(t, c) for t, c in rows]
 
 
 @router.post("", response_model=TenantOut, status_code=status.HTTP_201_CREATED)
@@ -49,10 +65,11 @@ async def create_tenant(
 
 @router.get("/{tenant_id}", response_model=TenantOut)
 async def get_tenant(tenant_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    tenant = await db.get(Tenant, tenant_id)
-    if not tenant:
+    q = _with_ios_count(select(Tenant).where(Tenant.id == tenant_id))
+    row = (await db.execute(q)).one_or_none()
+    if not row:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    return tenant
+    return _build_tenant_out(row[0], row[1])
 
 
 @router.patch("/{tenant_id}", response_model=TenantOut)
@@ -166,8 +183,8 @@ async def import_tenants_csv(
         cost_raw     = row.get("Replacement Cost") or row.get("replacement_cost") or "299.00"
         notes        = row.get("Notes") or row.get("notes") or None
 
-        if not name or not domain or not admin_email:
-            errors.append({"row": row_num, "domain": domain or "?", "error": "Name, Domain and Admin Email are required"})
+        if not name or not domain:
+            errors.append({"row": row_num, "domain": domain or "?", "error": "Name and Domain are required"})
             continue
 
         try:
@@ -184,8 +201,8 @@ async def import_tenants_csv(
         db.add(Tenant(
             name=name,
             domain=domain,
-            admin_email=admin_email,
-            customer_id=customer_id,
+            admin_email=admin_email or None,
+            customer_id=customer_id or None,
             device_replacement_cost=cost,
             notes=notes,
         ))
