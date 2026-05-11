@@ -149,6 +149,28 @@ class SuggestionOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── iOS Devices ───────────────────────────────────────────────────────────────
+
+class IosDeviceOut(BaseModel):
+    id: UUID
+    udid: str
+    serial_number: Optional[str]
+    device_name: Optional[str]
+    product_name: Optional[str]
+    model_name: Optional[str]
+    model_number: Optional[str]
+    os_version: Optional[str]
+    asset_tag: Optional[str]
+    supervised: Optional[bool]
+    last_checkin: Optional[datetime]
+    assigned_user: Optional[str]
+    school_name: Optional[str]
+    group_name: Optional[str]
+    imported_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Sync ──────────────────────────────────────────────────────────────────────
 
 class SyncLogOut(BaseModel):

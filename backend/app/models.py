@@ -36,6 +36,7 @@ class Tenant(Base):
 
     devices = relationship("Device", back_populates="tenant", cascade="all, delete-orphan")
     sync_logs = relationship("SyncLog", back_populates="tenant", cascade="all, delete-orphan")
+    ios_devices = relationship("IosDevice", back_populates="tenant", cascade="all, delete-orphan")
 
 
 class Device(Base):
@@ -139,6 +140,42 @@ class SuggestionComment(Base):
     )
 
     suggestion = relationship("Suggestion", back_populates="comments")
+
+
+class IosDevice(Base):
+    __tablename__ = "ios_devices"
+    __table_args__ = (UniqueConstraint("tenant_id", "udid", name="uq_tenant_ios_device"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    udid = Column(String(255), nullable=False)
+    serial_number = Column(String(255), index=True)
+    device_name = Column(String(255))               # e.g. "WOS-P-I-01"
+    product_name = Column(String(100))              # e.g. "iPad7,11"
+    model_name = Column(String(255))                # e.g. "iPad"
+    model_number = Column(String(100))              # e.g. "MW772B"
+    os_version = Column(String(50))
+    asset_tag = Column(String(255))
+    supervised = Column(Boolean, default=False)
+    last_checkin = Column(DateTime(timezone=True))
+    assigned_user = Column(String(255))
+    school_name = Column(String(255))
+    group_name = Column(String(512))                # comma-joined if device in multiple groups
+    imported_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    tenant = relationship("Tenant", back_populates="ios_devices")
 
 
 class SyncLog(Base):

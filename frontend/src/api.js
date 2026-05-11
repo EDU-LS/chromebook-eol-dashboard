@@ -69,6 +69,21 @@ export const api = {
       return r.json();
     });
   },
+  getIosDevices: (tenantId) => request(`/tenants/${tenantId}/ios-devices`),
+  importIosDevices: (tenantId, file) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("file", file);
+    return fetch(`${BASE}/tenants/${tenantId}/ios-devices/import`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    }).then((r) => {
+      if (r.status === 401) { clearToken(); window.location.href = "/login"; }
+      if (!r.ok) return r.text().then((t) => { throw new Error(t); });
+      return r.json();
+    });
+  },
   getSuggestions: () => request("/suggestions"),
   createSuggestion: (body) => request("/suggestions", { method: "POST", body: JSON.stringify(body) }),
   updateSuggestionStatus: (id, status) => request(`/suggestions/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
