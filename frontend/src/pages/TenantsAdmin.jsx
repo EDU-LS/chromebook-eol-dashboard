@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 
 export function TenantTypeBadge({ tenant }) {
@@ -37,6 +38,7 @@ const EMPTY = {
 
 export default function TenantsAdmin() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState(null);
@@ -239,8 +241,12 @@ export default function TenantsAdmin() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {tenants?.map((t) => (
-              <tr key={t.id}>
-                <td className="px-4 py-3 font-medium">{t.name}</td>
+              <tr
+                key={t.id}
+                onClick={() => navigate(`/tenant/${t.id}`)}
+                className="cursor-pointer hover:bg-brand-50 transition-colors"
+              >
+                <td className="px-4 py-3 font-medium text-brand-600">{t.name}</td>
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.domain}</td>
                 <td className="px-4 py-3">
                   <TenantTypeBadge tenant={t} />
@@ -254,7 +260,7 @@ export default function TenantsAdmin() {
                     {t.is_active ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2">
                     <button onClick={() => startEdit(t)}
                       className="text-xs text-brand-600 hover:underline">Edit</button>
