@@ -160,7 +160,7 @@ export default function TenantDetail() {
   const currentTab = activeTab ?? (tenant ? (tenant.admin_email ? "chromebooks" : "ipads") : "chromebooks");
   const { data: devices, isLoading } = useQuery({
     queryKey: ["devices", id],
-    queryFn: () => api.getDevices(id, { status: "ACTIVE", limit: 1000 }),
+    queryFn: () => api.getDevices(id, { status: "ACTIVE", limit: 10000 }),
   });
   const { data: iosDevices, isLoading: iosLoading } = useQuery({
     queryKey: ["ios-devices", id],
