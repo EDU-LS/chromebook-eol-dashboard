@@ -181,26 +181,31 @@ async def _upsert_devices(
     if not rows:
         return 0
 
-    stmt = pg_insert(Device).values(rows)
-    stmt = stmt.on_conflict_do_update(
-        constraint="uq_tenant_device",
-        set_={
-            "serial_number": stmt.excluded.serial_number,
-            "model": stmt.excluded.model,
-            "org_unit_path": stmt.excluded.org_unit_path,
-            "status": stmt.excluded.status,
-            "auto_update_expiration": stmt.excluded.auto_update_expiration,
-            "last_enrolled_time": stmt.excluded.last_enrolled_time,
-            "last_sync": stmt.excluded.last_sync,
-            "os_version": stmt.excluded.os_version,
-            "annotated_user": stmt.excluded.annotated_user,
-            "annotated_location": stmt.excluded.annotated_location,
-            "annotated_asset_id": stmt.excluded.annotated_asset_id,
-            "is_chromeos_flex": stmt.excluded.is_chromeos_flex,
-            "flex_eol_year": stmt.excluded.flex_eol_year,
-            "flex_status": stmt.excluded.flex_status,
-            "updated_at": stmt.excluded.updated_at,
-        },
-    )
-    await session.execute(stmt)
+    # Postgres limit is 65,535 bound parameters per statement.
+    # With 19 columns per row, max safe batch = ~500 rows (9,500 params).
+    BATCH_SIZE = 500
+    for i in range(0, len(rows), BATCH_SIZE):
+        batch = rows[i : i + BATCH_SIZE]
+        stmt = pg_insert(Device).values(batch)
+        stmt = stmt.on_conflict_do_update(
+            constraint="uq_tenant_device",
+            set_={
+                "serial_number": stmt.excluded.serial_number,
+                "model": stmt.excluded.model,
+                "org_unit_path": stmt.excluded.org_unit_path,
+                "status": stmt.excluded.status,
+                "auto_update_expiration": stmt.excluded.auto_update_expiration,
+                "last_enrolled_time": stmt.excluded.last_enrolled_time,
+                "last_sync": stmt.excluded.last_sync,
+                "os_version": stmt.excluded.os_version,
+                "annotated_user": stmt.excluded.annotated_user,
+                "annotated_location": stmt.excluded.annotated_location,
+                "annotated_asset_id": stmt.excluded.annotated_asset_id,
+                "is_chromeos_flex": stmt.excluded.is_chromeos_flex,
+                "flex_eol_year": stmt.excluded.flex_eol_year,
+                "flex_status": stmt.excluded.flex_status,
+                "updated_at": stmt.excluded.updated_at,
+            },
+        )
+        await session.execute(stmt)
     return len(rows)
