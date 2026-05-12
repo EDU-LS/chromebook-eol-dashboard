@@ -71,7 +71,7 @@ async def list_devices(
     status: Optional[str] = Query(None, description="Filter by status e.g. ACTIVE"),
     eol_within_months: Optional[int] = Query(None, ge=1, le=60),
     skip: int = 0,
-    limit: int = 500,
+    limit: int = Query(10000, le=50000),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await db.get(Tenant, tenant_id)
